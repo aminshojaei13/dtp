@@ -35,17 +35,13 @@ data class TwoPaneScene<T : Any>(
     override val previousEntries: List<NavEntry<T>>
 ) : Scene<T> {
     override val content: @Composable () -> Unit = {
-        // اگر فقط یک صفحه در بک‌استک بود، همان یکی را نشان بده
         if (entries.size == 1) {
             entries.first().Content()
         } else {
-            // اگر بیش از یک صفحه بود، صفحه اول (لیست) و صفحه آخر (جزئیات) را کنار هم نشان بده
             Row(modifier = Modifier.fillMaxSize()) {
-                // پنل سمت چپ (مثلا لیست اصلی)
                 Box(modifier = Modifier.weight(0.4f).fillMaxHeight()) {
                     entries.first().Content()
                 }
-                // پنل سمت راست (جزئیات)
                 Box(modifier = Modifier.weight(0.6f).fillMaxHeight()) {
                     entries.last().Content()
                 }

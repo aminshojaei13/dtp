@@ -4,7 +4,7 @@ class SettingsNavigator {
     fun move(state: SettingsNavigationState, delta: Int): NavigationResult {
         val rows = state.currentRows
         if (rows.isEmpty()) return NavigationResult.NoOp
-        val next = (state.focusedIndex + delta).coerceIn(0, rows.lastIndex) // no wrap
+        val next = (state.focusedIndex + delta).coerceIn(0, rows.lastIndex)
         if (next == state.focusedIndex) return NavigationResult.NoOp
         return NavigationResult.Changed(state.copy(focusedIndex = next, focusedRowId = rows[next].id))
     }
@@ -19,7 +19,7 @@ class SettingsNavigator {
     }
 
     fun right(state: SettingsNavigationState): NavigationResult {
-        if (state.path.size <= 1) return NavigationResult.NoOp // Right key at level 1 is consumed (NoOp)
+        if (state.path.size <= 1) return NavigationResult.NoOp
         val newPath = state.path.dropLast(1)
         val parentRows = newPath.last().children
         val returningId = state.path.last().id
