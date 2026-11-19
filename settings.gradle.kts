@@ -23,4 +23,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "DTP"
-include(":app")
+include(":app", ":twopane")
