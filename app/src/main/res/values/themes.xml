@@ -1,0 +1,4 @@
+<resources>
+
+    <style name="Theme.DTP" parent="Theme.AppCompat.DayNight.NoActionBar" />
+</resources>
