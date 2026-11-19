@@ -46,13 +46,24 @@ import com.braveboy.dtp.ui.theme.SelectedItemBackground
 private const val MAIN_PANE_WEIGHT = 0.58f
 private const val PREVIEW_PANE_WEIGHT = 0.42f
 
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    SettingsScreen(
+        state = state,
+        onIntent = viewModel::onIntent
+    )
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun SettingsScreen(
+    state: SettingsState,
+    onIntent: (SettingsIntent) -> Unit = {}
+) {
     val focusRequester = remember { FocusRequester() }
 
-    BackHandler(enabled = !state.isLoading) { viewModel.onIntent(SettingsIntent.Back) }
+    BackHandler(enabled = !state.isLoading) { onIntent(SettingsIntent.Back) }
 
     LaunchedEffect(state.mainRows) {
         if (state.mainRows.isNotEmpty()) {
@@ -68,25 +79,31 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                 when (event.nativeKeyEvent.keyCode) {
                     android.view.KeyEvent.KEYCODE_DPAD_UP -> {
-                        viewModel.onIntent(SettingsIntent.Up); true
+                        onIntent(SettingsIntent.Up)
+                        true
                     }
 
                     android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
-                        viewModel.onIntent(SettingsIntent.Down); true
+                        onIntent(SettingsIntent.Down)
+                        true
                     }
 
                     android.view.KeyEvent.KEYCODE_DPAD_LEFT,
                     android.view.KeyEvent.KEYCODE_DPAD_CENTER,
+
                     android.view.KeyEvent.KEYCODE_ENTER -> {
-                        viewModel.onIntent(SettingsIntent.Forward); true
+                        onIntent(SettingsIntent.Forward)
+                        true
                     }
 
                     android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                        viewModel.onIntent(SettingsIntent.Right); true
+                        onIntent(SettingsIntent.Right)
+                        true
                     }
 
                     android.view.KeyEvent.KEYCODE_BACK -> {
-                        viewModel.onIntent(SettingsIntent.Back); true
+                        onIntent(SettingsIntent.Back)
+                        true
                     }
 
                     else -> false
@@ -181,12 +198,6 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     preview?.value?.let { Text(it, color = FocusBorder, fontSize = 18.sp) }
                     if (preview != null && preview.children.isNotEmpty()) {
                         Spacer(Modifier.height(22.dp))
-
-                        Text(
-                            "Contains ${preview.children.size} options",
-                            color = MutedText,
-                            fontSize = 15.sp
-                        )
 
                         preview.children.take(5).forEach {
                             Spacer(Modifier.height(10.dp))
