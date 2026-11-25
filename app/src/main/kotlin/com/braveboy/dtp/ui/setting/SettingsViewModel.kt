@@ -101,7 +101,6 @@ class SettingsViewModel(
         _state.update { it.copy(isLoading = true, error = null) }
         runCatching { getRootSettingsUseCase() }
             .onSuccess { roots ->
-                Log.d("xavi", "load: $roots")
                 val root = SettingsNode(
                     id = "root",
                     title = "Settings",

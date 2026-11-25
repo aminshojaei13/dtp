@@ -1,7 +1,5 @@
 package com.braveboy.dtp.di
 
-import com.braveboy.dtp.data.local.datasource.SettingsLocalDataSource
-import com.braveboy.dtp.data.local.datasource.SettingsLocalDataSourceImpl
 import com.braveboy.dtp.data.remote.datasource.SettingsRemoteDataSource
 import com.braveboy.dtp.data.remote.datasource.SettingsRemoteDataSourceImpl
 import com.braveboy.dtp.data.repository.SettingsRepositoryImpl
@@ -15,7 +13,6 @@ import org.koin.dsl.module
 val appModule = module {
     // Data Sources
     single<SettingsRemoteDataSource> { SettingsRemoteDataSourceImpl(androidContext()) }
-    single<SettingsLocalDataSource> { SettingsLocalDataSourceImpl(get()) }
 
     // Repository
     single<SettingsRepository> { SettingsRepositoryImpl(get()) }

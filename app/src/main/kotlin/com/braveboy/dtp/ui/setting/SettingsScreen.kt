@@ -1,14 +1,11 @@
 package com.braveboy.dtp.ui.setting
 
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -32,7 +29,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -57,7 +53,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
 import androidx.tv.material3.Text
 import com.braveboy.dtp.domain.model.SettingsNode
-import com.braveboy.dtp.navigation.SettingsMain
+import com.braveboy.dtp.navigation.SettingsList
 import com.braveboy.dtp.navigation.SettingsPreview
 import com.braveboy.dtp.ui.theme.DarkBackground
 import com.braveboy.dtp.ui.theme.FocusBorder
@@ -67,8 +63,6 @@ import com.braveboy.dtp.ui.theme.PrimaryText
 import com.braveboy.dtp.ui.theme.SelectedItemBackground
 import com.example.nav3recipes.scenes.twopane.TwoPaneScene
 import com.example.nav3recipes.scenes.twopane.rememberTwoPaneSceneStrategy
-import kotlinx.coroutines.delay
-import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel) {
@@ -85,8 +79,22 @@ fun SettingsScreen(
     onIntent: (SettingsIntent) -> Unit = {}
 ) {
     val twoPaneStrategy = rememberTwoPaneSceneStrategy<NavKey>()
-    val backStack = rememberNavBackStack(SettingsMain,SettingsPreview("preview"))
+    val backStack = rememberNavBackStack(SettingsList(0, "Settings"), SettingsPreview("preview"))
     val latestState by rememberUpdatedState(state)
+
+    val pathTitles = state.path.map { it.title }.ifEmpty { listOf("Settings") }
+    LaunchedEffect(pathTitles) {
+        val desired = pathTitles.mapIndexed { i, title ->
+            SettingsList(
+                i,
+                title
+            )
+        } + SettingsPreview("preview")
+        if (backStack.toList() != desired) {
+            backStack.clear()
+            backStack.addAll(desired)
+        }
+    }
 
     BackHandler(enabled = !state.isLoading) { onIntent(SettingsIntent.Back) }
 
@@ -141,29 +149,22 @@ fun SettingsScreen(
             NavDisplay(
                 backStack = backStack,
                 sceneStrategies = listOf(twoPaneStrategy),
-                onBack = { backStack.removeLastOrNull() },
+                onBack = { onIntent(SettingsIntent.Back) },
             ) { key ->
                 when (key) {
-                    is SettingsMain -> NavEntry(
+                    is SettingsList -> NavEntry(
                         key = key,
                         metadata = TwoPaneScene.twoPane()
                     ) {
-                        val currentScreen = latestState.path.lastOrNull()
-                        AnimatedContent(
-                            targetState = currentScreen,
-                            transitionSpec = {
-                                (fadeIn(animationSpec = tween(300)) + slideInHorizontally { width -> width / 4 })
-                                    .togetherWith(fadeOut(animationSpec = tween(300)) + slideOutHorizontally { width -> -width / 4 })
-                            },
-                            label = "PageTransition"
-                        ) { node ->
-                            MainScreen(
-                                title = node?.title ?: "Settings",
-                                children = node?.children ?: latestState.mainRows,
-                                onIntent = onIntent,
-                                focusedIndex = latestState.focusedIndex
-                            )
-                        }
+                        val isTop = key.depth == latestState.path.lastIndex
+                        val node = latestState.path.getOrNull(key.depth)
+                        MainScreen(
+                            title = key.title,
+                            children = node?.children ?: latestState.mainRows,
+                            onIntent = onIntent,
+                            focusedIndex = if (isTop) latestState.focusedIndex else 0,
+                            isActive = isTop
+                        )
                     }
 
                     is SettingsPreview -> NavEntry(key = key, metadata = TwoPaneScene.twoPane()) {
@@ -197,13 +198,14 @@ fun MainScreen(
     children: List<SettingsNode>,
     onIntent: (SettingsIntent) -> Unit,
     focusedIndex: Int = 0,
+    isActive: Boolean = true,
 ) {
     val focusRequesters = remember(children) {
         List(children.size) { FocusRequester() }
     }
 
-    LaunchedEffect(children, focusedIndex) {
-        if (children.isNotEmpty()) {
+    LaunchedEffect(children, focusedIndex, isActive) {
+        if (isActive && children.isNotEmpty()) {
             val targetIndex = focusedIndex.coerceIn(0, children.lastIndex)
             runCatching {
                 focusRequesters.getOrNull(targetIndex)?.requestFocus()

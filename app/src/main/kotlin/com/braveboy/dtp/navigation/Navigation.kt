@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 
 @Serializable
-data object SettingsMain : NavKey
+data class SettingsList(val depth: Int, val title: String) : NavKey
 
 @Serializable
 data class SettingsPreview(
