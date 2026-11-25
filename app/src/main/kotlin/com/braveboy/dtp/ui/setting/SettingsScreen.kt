@@ -1,8 +1,18 @@
 package com.braveboy.dtp.ui.setting
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,29 +32,41 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.ui.NavDisplay
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
 import androidx.tv.material3.Text
+import com.braveboy.dtp.domain.model.SettingsNode
+import com.braveboy.dtp.navigation.SettingsMain
+import com.braveboy.dtp.navigation.SettingsPreview
 import com.braveboy.dtp.ui.theme.DarkBackground
 import com.braveboy.dtp.ui.theme.FocusBorder
 import com.braveboy.dtp.ui.theme.MutedText
 import com.braveboy.dtp.ui.theme.PanelBackground
 import com.braveboy.dtp.ui.theme.PrimaryText
 import com.braveboy.dtp.ui.theme.SelectedItemBackground
-
-private const val MAIN_PANE_WEIGHT = 0.58f
-private const val PREVIEW_PANE_WEIGHT = 0.42f
+import com.example.nav3recipes.scenes.twopane.TwoPaneScene
+import com.example.nav3recipes.scenes.twopane.rememberTwoPaneSceneStrategy
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel) {
@@ -55,21 +77,28 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     )
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     state: SettingsState,
     onIntent: (SettingsIntent) -> Unit = {}
 ) {
-    val focusRequester = remember { FocusRequester() }
+    val twoPaneStrategy = rememberTwoPaneSceneStrategy<NavKey>()
+    val backStack = rememberNavBackStack(SettingsMain)
 
-    BackHandler(enabled = !state.isLoading) { onIntent(SettingsIntent.Back) }
-
-    LaunchedEffect(state.mainRows) {
-        if (state.mainRows.isNotEmpty()) {
-            focusRequester.requestFocus()
+    LaunchedEffect(state.preview) {
+        val currentPreviewKey = backStack.filterIsInstance<SettingsPreview>().firstOrNull()
+        val newPreviewId = state.preview?.id ?: "root"
+        if (currentPreviewKey == null) {
+            backStack.add(SettingsPreview(newPreviewId))
+        } else if (currentPreviewKey.nodeId != newPreviewId) {
+            val index = backStack.indexOf(currentPreviewKey)
+            if (index != -1) {
+                backStack[index] = SettingsPreview(newPreviewId)
+            }
         }
     }
+
+    BackHandler(enabled = !state.isLoading) { onIntent(SettingsIntent.Back) }
 
     Box(
         modifier = Modifier
@@ -90,17 +119,12 @@ fun SettingsScreen(
 
                     android.view.KeyEvent.KEYCODE_DPAD_LEFT,
                     android.view.KeyEvent.KEYCODE_DPAD_CENTER,
-
                     android.view.KeyEvent.KEYCODE_ENTER -> {
                         onIntent(SettingsIntent.Forward)
                         true
                     }
 
-                    android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                        onIntent(SettingsIntent.Right)
-                        true
-                    }
-
+                    android.view.KeyEvent.KEYCODE_DPAD_RIGHT,
                     android.view.KeyEvent.KEYCODE_BACK -> {
                         onIntent(SettingsIntent.Back)
                         true
@@ -124,88 +148,217 @@ fun SettingsScreen(
                 modifier = Modifier.align(Alignment.Center)
             )
         } else {
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.spacedBy(22.dp)
-            ) {
-                Column(
+            NavDisplay(
+                backStack = backStack,
+                sceneStrategies = listOf(twoPaneStrategy),
+                onBack = { backStack.removeLastOrNull() },
+            ) { key ->
+                when (key) {
+                    is SettingsMain -> NavEntry(
+                        key = key,
+                        metadata = TwoPaneScene.twoPane()
+                    ) {
+                        val currentScreen = state.path.lastOrNull()
+                        AnimatedContent(
+                            targetState = currentScreen,
+                            transitionSpec = {
+                                (fadeIn(animationSpec = tween(300)) + slideInHorizontally { width -> width / 4 })
+                                    .togetherWith(fadeOut(animationSpec = tween(300)) + slideOutHorizontally { width -> -width / 4 })
+                            },
+                            label = "PageTransition"
+                        ) { node ->
+                            MainScreen(
+                                title = node?.title ?: "Settings",
+                                children = node?.children ?: state.mainRows,
+                                onIntent = onIntent,
+                                focusedIndex = state.focusedIndex
+                            )
+                        }
+                    }
+
+                    is SettingsPreview -> NavEntry(key = key, metadata = TwoPaneScene.twoPane()) {
+                        AnimatedContent(
+                            targetState = state.preview,
+                            transitionSpec = {
+                                fadeIn(animationSpec = tween(250)).togetherWith(
+                                    fadeOut(
+                                        animationSpec = tween(250)
+                                    )
+                                )
+                            },
+                            label = "PreviewTransition"
+                        ) { preview ->
+                            PreviewScreen(preview = preview)
+                        }
+                    }
+
+                    else -> NavEntry(key = key) {}
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun MainScreen(
+    modifier: Modifier = Modifier,
+    title: String,
+    children: List<SettingsNode>,
+    onIntent: (SettingsIntent) -> Unit,
+    focusedIndex: Int = 0,
+) {
+    val focusRequesters = remember(children) {
+        List(children.size) { FocusRequester() }
+    }
+
+    LaunchedEffect(children, focusedIndex) {
+        if (children.isNotEmpty()) {
+            val targetIndex = focusedIndex.coerceIn(0, children.lastIndex)
+            delay(50.milliseconds)
+            runCatching {
+                focusRequesters.getOrNull(targetIndex)?.requestFocus()
+            }
+        }
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxHeight()
+            .padding(end = 11.dp)
+    ) {
+        Text(
+            text = title,
+            color = PrimaryText,
+            fontSize = 30.sp
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            itemsIndexed(
+                children,
+                key = { _, item -> item.id }
+            ) { index, row ->
+                var isItemFocused by remember { mutableStateOf(false) }
+                val isSelected = isItemFocused
+                val itemFocusRequester =
+                    focusRequesters.getOrElse(index) { remember(row.id) { FocusRequester() } }
+
+                val backgroundColor by animateColorAsState(
+                    targetValue = if (isSelected) SelectedItemBackground else PanelBackground,
+                    animationSpec = tween(durationMillis = 200),
+                    label = "backgroundColor"
+                )
+                val borderColor by animateColorAsState(
+                    targetValue = if (isSelected) FocusBorder else Color.Transparent,
+                    animationSpec = tween(durationMillis = 200),
+                    label = "borderColor"
+                )
+
+                Row(
                     modifier = Modifier
-                        .weight(MAIN_PANE_WEIGHT)
-                        .fillMaxHeight()
-                ) {
-                    Text(
-                        text = state.path.lastOrNull()?.title ?: "Settings",
-                        color = PrimaryText,
-                        fontSize = 30.sp
-                    )
-                    Spacer(modifier = Modifier.height(20.dp))
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        itemsIndexed(state.mainRows, key = { _, row -> row.id }) { index, row ->
-                            val selected = index == state.focusedIndex
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .then(
-                                        if (selected) Modifier.border(
-                                            2.dp,
-                                            FocusBorder,
-                                            RoundedCornerShape(10.dp)
-                                        )
-                                        else Modifier
-                                    )
-                                    .background(
-                                        if (selected) SelectedItemBackground else PanelBackground,
-                                        RoundedCornerShape(10.dp)
-                                    )
-                                    .focusRequester(if (index == 0) focusRequester else remember(row.id) { FocusRequester() })
-                                    .focusable()
-                                    .padding(horizontal = 20.dp, vertical = 17.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(Modifier.weight(1f)) {
-                                    Text(row.title, color = PrimaryText, fontSize = 20.sp)
-                                    if (row.summary.isNotBlank()) {
-                                        Text(row.summary, color = MutedText, fontSize = 13.sp)
-                                    }
-                                }
-                                if (row.children.isEmpty().not()) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight,
-                                        contentDescription = null
-                                    )
-                                }
+                        .fillMaxWidth()
+                        .border(
+                            2.dp,
+                            borderColor,
+                            RoundedCornerShape(10.dp)
+                        )
+                        .background(
+                            backgroundColor,
+                            RoundedCornerShape(10.dp)
+                        )
+                        .focusRequester(itemFocusRequester)
+                        .onFocusChanged { focusState ->
+                            isItemFocused = focusState.isFocused
+                            if (focusState.isFocused) {
+                                onIntent(SettingsIntent.FocusRow(index))
                             }
                         }
-                    }
-                }
-                Column(
-                    modifier = Modifier
-                        .weight(PREVIEW_PANE_WEIGHT)
-                        .fillMaxHeight()
-                        .background(PanelBackground, RoundedCornerShape(16.dp))
-                        .padding(28.dp)
+                        .focusable()
+                        .clickable {
+                            onIntent(SettingsIntent.FocusRow(index))
+                            onIntent(SettingsIntent.Forward)
+                        }
+                        .padding(horizontal = 20.dp, vertical = 17.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val preview = state.preview
-
-                    Text(preview?.title ?: "Choose an item", color = PrimaryText, fontSize = 26.sp)
-
-                    Spacer(Modifier.height(12.dp))
-
-                    Text(preview?.summary.orEmpty(), color = MutedText, fontSize = 17.sp)
-
-                    Spacer(Modifier.height(26.dp))
-
-                    preview?.value?.let { Text(it, color = FocusBorder, fontSize = 18.sp) }
-                    if (preview != null && preview.children.isNotEmpty()) {
-                        Spacer(Modifier.height(22.dp))
-
-                        preview.children.take(5).forEach {
-                            Spacer(Modifier.height(10.dp))
-
-                            Text("•  ${it.title}", color = PrimaryText, fontSize = 16.sp)
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            row.title,
+                            color = PrimaryText,
+                            fontSize = 20.sp
+                        )
+                        if (row.summary.isNotBlank()) {
+                            Text(
+                                row.summary,
+                                color = MutedText,
+                                fontSize = 13.sp
+                            )
                         }
                     }
+                    if (row.children.isNotEmpty()) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight,
+                            contentDescription = null
+                        )
+                    }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun PreviewScreen(
+    modifier: Modifier = Modifier,
+    preview: SettingsNode?
+) {
+    Column(
+        modifier = modifier
+            .fillMaxHeight()
+            .background(PanelBackground, RoundedCornerShape(16.dp))
+            .padding(28.dp)
+    ) {
+        Text(
+            preview?.title ?: "Choose an item",
+            color = PrimaryText,
+            fontSize = 26.sp
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        if (!preview?.summary.isNullOrBlank()) {
+            Text(
+                preview.summary,
+                color = MutedText,
+                fontSize = 17.sp
+            )
+            Spacer(Modifier.height(26.dp))
+        }
+
+        preview?.value?.let {
+            Text(
+                it,
+                color = FocusBorder,
+                fontSize = 18.sp
+            )
+            Spacer(Modifier.height(22.dp))
+        }
+
+        if (preview != null && preview.children.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+
+            preview.children.forEach { child ->
+                Spacer(Modifier.height(10.dp))
+
+                Text(
+                    "•  ${child.title}",
+                    color = PrimaryText,
+                    fontSize = 16.sp
+                )
             }
         }
     }

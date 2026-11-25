@@ -1,12 +1,10 @@
 package com.braveboy.dtp.ui.setting
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.braveboy.dtp.domain.model.SettingsNode
 import com.braveboy.dtp.domain.usecase.GetRootSettingsUseCase
-import com.braveboy.dtp.navigation.NavigationResult
-import com.braveboy.dtp.navigation.SettingsNavigationState
-import com.braveboy.dtp.navigation.SettingsNavigator
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -16,7 +14,6 @@ import kotlinx.coroutines.launch
 
 class SettingsViewModel(
     private val getRootSettingsUseCase: GetRootSettingsUseCase,
-    private val navigator: SettingsNavigator = SettingsNavigator()
 ) : ViewModel() {
     private val _state = MutableStateFlow(SettingsState())
     val state = _state.asStateFlow()
@@ -24,31 +21,79 @@ class SettingsViewModel(
     private val _effects = MutableSharedFlow<SettingsEffect>()
     val effects = _effects.asSharedFlow()
 
-    private var navigation: SettingsNavigationState? = null
 
     init { load() }
 
     fun onIntent(intent: SettingsIntent) {
         when (intent) {
-            SettingsIntent.Up -> transition { navigator.move(it, -1) }
-            SettingsIntent.Down -> transition { navigator.move(it, 1) }
-            SettingsIntent.Forward -> transition { navigator.forward(it) }
-            SettingsIntent.Right -> transition { navigator.right(it) }
-            SettingsIntent.Back -> transition { navigator.back(it) }
-            is SettingsIntent.FocusRow -> transition { navigator.focus(it, intent.index) }
+            SettingsIntent.Up -> moveFocus(-1)
+            SettingsIntent.Down -> moveFocus(1)
+            SettingsIntent.Forward -> navigateForward()
+            SettingsIntent.Right -> navigateBack(exitOnRoot = false)
+            SettingsIntent.Back -> navigateBack(exitOnRoot = true)
+            is SettingsIntent.FocusRow -> focusRow(intent.index)
             SettingsIntent.Retry -> load()
         }
     }
 
-    private fun transition(block: (SettingsNavigationState) -> NavigationResult) {
-        val current = navigation ?: return
-        when (val result = block(current)) {
-            is NavigationResult.Changed -> {
-                navigation = result.state
-                publish(result.state)
+    private fun moveFocus(delta: Int) {
+        val currentState = _state.value
+        if (currentState.mainRows.isEmpty()) return
+        val newIndex = (currentState.focusedIndex + delta).coerceIn(0, currentState.mainRows.lastIndex)
+        focusRow(newIndex)
+    }
+
+    private fun focusRow(index: Int) {
+        _state.update { s ->
+            if (s.mainRows.isEmpty()) return@update s
+            val validIndex = index.coerceIn(0, s.mainRows.lastIndex)
+            s.copy(
+                focusedIndex = validIndex,
+                preview = s.mainRows.getOrNull(validIndex)
+            )
+        }
+    }
+
+    private fun navigateForward() {
+        val currentState = _state.value
+        val focusedNode = currentState.mainRows.getOrNull(currentState.focusedIndex) ?: return
+        if (focusedNode.children.isNotEmpty()) {
+            val newPath = currentState.path + focusedNode
+            val newMainRows = focusedNode.children
+            val firstChild = newMainRows.firstOrNull()
+            _state.update { s ->
+                s.copy(
+                    path = newPath,
+                    mainRows = newMainRows,
+                    focusedIndex = 0,
+                    preview = firstChild
+                )
             }
-            NavigationResult.Exit -> viewModelScope.launch { _effects.emit(SettingsEffect.ExitScreen) }
-            NavigationResult.NoOp -> Unit
+        }
+    }
+
+    private fun navigateBack(exitOnRoot: Boolean) {
+        val currentState = _state.value
+        if (currentState.path.size > 1) {
+            val poppedNode = currentState.path.last()
+            val newPath = currentState.path.dropLast(1)
+            val parentNode = newPath.last()
+            val parentChildren = parentNode.children
+            val restoredIndex = parentChildren.indexOfFirst { it.id == poppedNode.id }.coerceAtLeast(0)
+            val restoredPreview = parentChildren.getOrNull(restoredIndex)
+
+            _state.update { s ->
+                s.copy(
+                    path = newPath,
+                    mainRows = parentChildren,
+                    focusedIndex = restoredIndex,
+                    preview = restoredPreview
+                )
+            }
+        } else if (exitOnRoot) {
+            viewModelScope.launch {
+                _effects.emit(SettingsEffect.ExitScreen)
+            }
         }
     }
 
@@ -56,31 +101,23 @@ class SettingsViewModel(
         _state.update { it.copy(isLoading = true, error = null) }
         runCatching { getRootSettingsUseCase() }
             .onSuccess { roots ->
+                Log.d("xavi", "load: $roots")
                 val root = SettingsNode(
                     id = "root",
                     title = "Settings",
                     summary = "All settings",
                     children = roots
                 )
-                val first = roots.firstOrNull()
-                navigation = SettingsNavigationState(
-                    path = listOf(root),
-                    focusedRowId = first?.id,
-                    focusedIndex = 0
-                )
-                navigation?.let(::publish)
+                _state.update{ s ->
+                    s.copy(
+                        isLoading = false,
+                        mainRows = roots,
+                        path = listOf(root),
+                        focusedIndex = 0,
+                        preview = roots.firstOrNull()
+                    )
+                }
             }
             .onFailure { _state.update { s -> s.copy(isLoading = false, error = it.message ?: "Unknown error") } }
-    }
-
-    private fun publish(nav: SettingsNavigationState) {
-        val rows = nav.currentRows
-        _state.value = SettingsState(
-            isLoading = false,
-            path = nav.path,
-            mainRows = rows,
-            focusedIndex = nav.focusedIndex,
-            preview = nav.selectedRow
-        )
     }
 }

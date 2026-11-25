@@ -7,7 +7,6 @@ import com.braveboy.dtp.data.remote.datasource.SettingsRemoteDataSourceImpl
 import com.braveboy.dtp.data.repository.SettingsRepositoryImpl
 import com.braveboy.dtp.domain.repository.SettingsRepository
 import com.braveboy.dtp.domain.usecase.GetRootSettingsUseCase
-import com.braveboy.dtp.navigation.SettingsNavigator
 import com.braveboy.dtp.ui.setting.SettingsViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
@@ -24,8 +23,7 @@ val appModule = module {
     // Use Cases
     factory { GetRootSettingsUseCase(get()) }
 
-    factory { SettingsNavigator() }
 
     // ViewModel
-    viewModel { SettingsViewModel(get(), get()) }
+    viewModel { SettingsViewModel(get()) }
 }
