@@ -8,20 +8,14 @@ import org.junit.Test
 
 class UseCasesTest {
 
-    private val fakeNodes = listOf(
-        SettingsNode(id = "root", title = "Root")
-    )
-
-    private val fakeRepository = object : SettingsRepository {
-        override suspend fun loadRoot(): List<SettingsNode> = fakeNodes
-        override suspend fun childrenOf(nodeId: String): List<SettingsNode> = emptyList()
-        override suspend fun findNode(nodeId: String): SettingsNode? = fakeNodes.firstOrNull { it.id == nodeId }
-    }
+    private val nodes = listOf(SettingsNode(id = "display", title = "Display"))
 
     @Test
-    fun getRootSettingsUseCase_invokesRepositoryLoadRoot() = runTest {
-        val useCase = GetRootSettingsUseCase(fakeRepository)
-        val result = useCase()
-        assertEquals(fakeNodes, result)
+    fun getRootSettingsUseCase_returnsRepositoryRootNodes() = runTest {
+        val repository = object : SettingsRepository {
+            override suspend fun loadRoot(): List<SettingsNode> = nodes
+        }
+
+        assertEquals(nodes, GetRootSettingsUseCase(repository).invoke())
     }
 }

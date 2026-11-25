@@ -61,8 +61,8 @@ import com.braveboy.dtp.ui.theme.MutedText
 import com.braveboy.dtp.ui.theme.PanelBackground
 import com.braveboy.dtp.ui.theme.PrimaryText
 import com.braveboy.dtp.ui.theme.SelectedItemBackground
-import com.example.nav3recipes.scenes.twopane.TwoPaneScene
-import com.example.nav3recipes.scenes.twopane.rememberTwoPaneSceneStrategy
+import com.braveboy.dtp.navigation.TwoPaneScene
+import com.braveboy.dtp.navigation.rememberTwoPaneSceneStrategy
 
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel) {
@@ -122,7 +122,11 @@ fun SettingsScreen(
                         true
                     }
 
-                    android.view.KeyEvent.KEYCODE_DPAD_RIGHT,
+                    android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                        onIntent(SettingsIntent.Right)
+                        true
+                    }
+
                     android.view.KeyEvent.KEYCODE_BACK -> {
                         onIntent(SettingsIntent.Back)
                         true

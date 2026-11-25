@@ -1,6 +1,5 @@
 package com.braveboy.dtp.ui.setting
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.braveboy.dtp.domain.model.SettingsNode
@@ -22,7 +21,9 @@ class SettingsViewModel(
     val effects = _effects.asSharedFlow()
 
 
-    init { load() }
+    init {
+        load()
+    }
 
     fun onIntent(intent: SettingsIntent) {
         when (intent) {
@@ -39,7 +40,8 @@ class SettingsViewModel(
     private fun moveFocus(delta: Int) {
         val currentState = _state.value
         if (currentState.mainRows.isEmpty()) return
-        val newIndex = (currentState.focusedIndex + delta).coerceIn(0, currentState.mainRows.lastIndex)
+        val newIndex =
+            (currentState.focusedIndex + delta).coerceIn(0, currentState.mainRows.lastIndex)
         focusRow(newIndex)
     }
 
@@ -79,7 +81,8 @@ class SettingsViewModel(
             val newPath = currentState.path.dropLast(1)
             val parentNode = newPath.last()
             val parentChildren = parentNode.children
-            val restoredIndex = parentChildren.indexOfFirst { it.id == poppedNode.id }.coerceAtLeast(0)
+            val restoredIndex =
+                parentChildren.indexOfFirst { it.id == poppedNode.id }.coerceAtLeast(0)
             val restoredPreview = parentChildren.getOrNull(restoredIndex)
 
             _state.update { s ->
@@ -107,7 +110,7 @@ class SettingsViewModel(
                     summary = "All settings",
                     children = roots
                 )
-                _state.update{ s ->
+                _state.update { s ->
                     s.copy(
                         isLoading = false,
                         mainRows = roots,
@@ -117,6 +120,13 @@ class SettingsViewModel(
                     )
                 }
             }
-            .onFailure { _state.update { s -> s.copy(isLoading = false, error = it.message ?: "Unknown error") } }
+            .onFailure {
+                _state.update { s ->
+                    s.copy(
+                        isLoading = false,
+                        error = it.message ?: "Unknown error"
+                    )
+                }
+            }
     }
 }
