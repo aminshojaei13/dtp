@@ -32,8 +32,10 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,20 +85,8 @@ fun SettingsScreen(
     onIntent: (SettingsIntent) -> Unit = {}
 ) {
     val twoPaneStrategy = rememberTwoPaneSceneStrategy<NavKey>()
-    val backStack = rememberNavBackStack(SettingsMain)
-
-    LaunchedEffect(state.preview) {
-        val currentPreviewKey = backStack.filterIsInstance<SettingsPreview>().firstOrNull()
-        val newPreviewId = state.preview?.id ?: "root"
-        if (currentPreviewKey == null) {
-            backStack.add(SettingsPreview(newPreviewId))
-        } else if (currentPreviewKey.nodeId != newPreviewId) {
-            val index = backStack.indexOf(currentPreviewKey)
-            if (index != -1) {
-                backStack[index] = SettingsPreview(newPreviewId)
-            }
-        }
-    }
+    val backStack = rememberNavBackStack(SettingsMain,SettingsPreview("preview"))
+    val latestState by rememberUpdatedState(state)
 
     BackHandler(enabled = !state.isLoading) { onIntent(SettingsIntent.Back) }
 
@@ -158,7 +148,7 @@ fun SettingsScreen(
                         key = key,
                         metadata = TwoPaneScene.twoPane()
                     ) {
-                        val currentScreen = state.path.lastOrNull()
+                        val currentScreen = latestState.path.lastOrNull()
                         AnimatedContent(
                             targetState = currentScreen,
                             transitionSpec = {
@@ -169,16 +159,16 @@ fun SettingsScreen(
                         ) { node ->
                             MainScreen(
                                 title = node?.title ?: "Settings",
-                                children = node?.children ?: state.mainRows,
+                                children = node?.children ?: latestState.mainRows,
                                 onIntent = onIntent,
-                                focusedIndex = state.focusedIndex
+                                focusedIndex = latestState.focusedIndex
                             )
                         }
                     }
 
                     is SettingsPreview -> NavEntry(key = key, metadata = TwoPaneScene.twoPane()) {
                         AnimatedContent(
-                            targetState = state.preview,
+                            targetState = latestState.preview,
                             transitionSpec = {
                                 fadeIn(animationSpec = tween(250)).togetherWith(
                                     fadeOut(
@@ -215,7 +205,6 @@ fun MainScreen(
     LaunchedEffect(children, focusedIndex) {
         if (children.isNotEmpty()) {
             val targetIndex = focusedIndex.coerceIn(0, children.lastIndex)
-            delay(50.milliseconds)
             runCatching {
                 focusRequesters.getOrNull(targetIndex)?.requestFocus()
             }
