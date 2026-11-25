@@ -8,5 +8,6 @@ data class SettingsNode(
     val title: String,
     val summary: String = "",
     val value: String? = null,
+    val imageUrl: String? = null,
     val children: List<SettingsNode> = emptyList()
 )

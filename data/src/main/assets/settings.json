@@ -177,6 +177,7 @@
         "id": "about",
         "title": "About",
         "summary": "Device details and OS version",
+        "imageUrl": "https://play-lh.googleusercontent.com/qTGf3dk3osgMkM2gQTOyrAz-ai1GBqwXlomVs5-9NO65e09H6MfqPW29d30Fzk3UrTj_vkvu7MKDmVYEiOkN",
         "children": [
           {
             "id": "model",

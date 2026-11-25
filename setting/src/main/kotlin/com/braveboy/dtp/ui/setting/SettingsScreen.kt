@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import coil3.compose.AsyncImage
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -39,6 +41,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
@@ -165,6 +168,7 @@ fun SettingsScreen(
                         MainScreen(
                             title = key.title,
                             children = node?.children ?: latestState.mainRows,
+                            imageUrl = node?.imageUrl,
                             onIntent = onIntent,
                             focusedIndex = if (isTop) latestState.focusedIndex else 0,
                             isActive = isTop
@@ -200,6 +204,7 @@ fun MainScreen(
     modifier: Modifier = Modifier,
     title: String,
     children: List<SettingsNode>,
+    imageUrl: String? = null,
     onIntent: (SettingsIntent) -> Unit,
     focusedIndex: Int = 0,
     isActive: Boolean = true,
@@ -229,7 +234,17 @@ fun MainScreen(
         )
 
         Spacer(modifier = Modifier.height(20.dp))
-
+        if (imageUrl != null) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = title,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(260.dp)
+                    .padding(bottom = 16.dp)
+            )
+        }
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -317,6 +332,17 @@ fun PreviewScreen(
             .background(PanelBackground, RoundedCornerShape(16.dp))
             .padding(28.dp)
     ) {
+        if (preview?.imageUrl != null) {
+            Box(
+                modifier = Modifier
+                    .size(200.dp)
+                    .border(4.dp, MutedText, RoundedCornerShape(28.dp))
+                    .padding(36.dp)
+                    .background(MutedText.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+            )
+            Spacer(Modifier.height(24.dp))
+        }
+
         Text(
             preview?.title ?: "Choose an item",
             color = PrimaryText,
