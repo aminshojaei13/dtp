@@ -1,0 +1,198 @@
+[
+  {
+    "id": "network",
+    "title": "Network & Internet",
+    "summary": "Wi-Fi and connectivity",
+    "children": [
+      {
+        "id": "wifi",
+        "title": "Wi-Fi",
+        "summary": "Wireless network settings",
+        "children": [
+          {
+            "id": "homenet",
+            "title": "HomeNet",
+            "summary": "Connected · Excellent signal",
+            "children": [
+              {
+                "id": "signal",
+                "title": "Signal strength",
+                "summary": "Current signal quality",
+                "value": "Excellent · 92%"
+              },
+              {
+                "id": "security",
+                "title": "Security",
+                "summary": "Network encryption",
+                "value": "WPA2-Personal"
+              },
+              {
+                "id": "ip",
+                "title": "IP settings",
+                "summary": "Network address configuration",
+                "value": "DHCP"
+              }
+            ]
+          },
+          {
+            "id": "guest",
+            "title": "Guest-WiFi",
+            "summary": "Available network",
+            "children": [
+              {
+                "id": "guest-signal",
+                "title": "Signal strength",
+                "summary": "Current signal quality",
+                "value": "Good · 71%"
+              },
+              {
+                "id": "guest-security",
+                "title": "Security",
+                "summary": "Network encryption",
+                "value": "WPA2"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ethernet",
+        "title": "Ethernet",
+        "summary": "Wired network settings",
+        "children": [
+          {
+            "id": "ethernet-status",
+            "title": "Connection status",
+            "summary": "Cable connection",
+            "value": "Disconnected"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "accounts",
+    "title": "Accounts & Sign-in",
+    "summary": "Google account and profile management",
+    "children": [
+      {
+        "id": "google",
+        "title": "Google Account",
+        "summary": "Primary signed-in account",
+        "children": [
+          {
+            "id": "sync",
+            "title": "Sync status",
+            "summary": "Account synchronization",
+            "children": [
+              {
+                "id": "sync-state",
+                "title": "Sync state",
+                "summary": "Last synced recently",
+                "value": "Enabled"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "display",
+    "title": "Display & Sound",
+    "summary": "Picture, resolution and audio output",
+    "children": [
+      {
+        "id": "picture",
+        "title": "Picture",
+        "summary": "Picture mode and brightness",
+        "children": [
+          {
+            "id": "mode",
+            "title": "Picture mode",
+            "summary": "Choose display preset",
+            "children": [
+              {
+                "id": "standard",
+                "title": "Standard",
+                "summary": "Balanced colors and brightness",
+                "value": "Selected"
+              },
+              {
+                "id": "cinema",
+                "title": "Cinema",
+                "summary": "Warm colors for movies",
+                "value": "Not selected"
+              },
+              {
+                "id": "vivid",
+                "title": "Vivid",
+                "summary": "Brighter and saturated colors",
+                "value": "Not selected"
+              }
+            ]
+          },
+          {
+            "id": "brightness",
+            "title": "Panel brightness",
+            "summary": "Adjust display brightness",
+            "value": "70%"
+          }
+        ]
+      },
+      {
+        "id": "sound",
+        "title": "Sound",
+        "summary": "Audio output and sound effects",
+        "children": [
+          {
+            "id": "output",
+            "title": "Audio output",
+            "summary": "Select speaker output device",
+            "children": [
+              {
+                "id": "tv-speaker",
+                "title": "TV speakers",
+                "summary": "Built-in television speakers",
+                "value": "Selected"
+              },
+              {
+                "id": "arc",
+                "title": "HDMI ARC",
+                "summary": "External soundbar or receiver",
+                "value": "Not selected"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "device",
+    "title": "Device Preferences",
+    "summary": "About, system updates and info",
+    "children": [
+      {
+        "id": "about",
+        "title": "About",
+        "summary": "Device details and OS version",
+        "imageUrl": "https://play-lh.googleusercontent.com/qTGf3dk3osgMkM2gQTOyrAz-ai1GBqwXlomVs5-9NO65e09H6MfqPW29d30Fzk3UrTj_vkvu7MKDmVYEiOkN",
+        "children": [
+          {
+            "id": "model",
+            "title": "Device model",
+            "summary": "Model specification",
+            "value": "Android TV 4K"
+          },
+          {
+            "id": "version",
+            "title": "Android OS version",
+            "summary": "Operating system version",
+            "value": "Android TV 14"
+          }
+        ]
+      }
+    ]
+  }
+]

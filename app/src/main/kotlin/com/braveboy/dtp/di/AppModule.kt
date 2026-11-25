@@ -20,7 +20,6 @@ val appModule = module {
     // Use Cases
     factory { GetRootSettingsUseCase(get()) }
 
-
     // ViewModel
     viewModel { SettingsViewModel(get()) }
 }
